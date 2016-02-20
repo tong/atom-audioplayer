@@ -1,0 +1,56 @@
+
+@import "ui-variables";
+
+[data-path$='.mp3']:before,
+[data-path$='.ogg']:before,
+[data-path$='.wav']:before {
+    content: "\f0ba" !important;
+}
+
+.audioplayer {
+
+    -webkit-user-select: none;
+    cursor: default;
+
+    canvas.waveform {
+        position: absolute;
+        display: inline;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }
+
+    .marker {
+        position: absolute;
+        display: inline;
+        top: 0;
+        bottom: 0;
+        height: 100%;
+        width: 1px;
+        background: @text-color-highlight;
+    }
+
+    audio {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        //display: inline;
+        //width: 100vh;
+        //max-width: 1ev;
+        text-align: center;
+        opacity: 0.9;
+    }
+
+    /*
+    // SEE: https://gist.github.com/afabbro/3759334
+    audio::-webkit-media-controls-current-time-display {
+        display: none;
+    }
+    */
+}
+
+.audioplayer-status {
+    //display: none;
+}

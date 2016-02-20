@@ -1,0 +1,16 @@
+{
+  "name": "audioplayer",
+  "main": "./lib/audioplayer",
+  "version": "0.2.0",
+  "description": "Playback audio files",
+  "consumedServices": {
+      "status-bar": { "versions": { "^1.0.0": "consumeStatusBar" } }
+  },
+  "keywords": ["audio","audioplayer"],
+  "repository": "https://github.com/tong/atom-audioplayer",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.5.0 <2.0.0"
+  },
+  "dependencies": {}
+}

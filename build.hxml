@@ -1,0 +1,8 @@
+-js lib/audioplayer.js
+-lib hxatom
+-dce full
+-cp src
+-cp ../../lib/om.audio/src
+-cp ../../lib/om.dom/src
+-debug
+Main
