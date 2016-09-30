@@ -38,19 +38,29 @@
         background: @text-color;
     }
 
+    // SEE: https://gist.github.com/afabbro/3759334
+
     audio {
         position: absolute;
         top: @component-padding;
         right: @component-padding;
         left: @component-padding;
         opacity: 0.9;
+
+        &::-webkit-media-controls-panel {
+            //opacity:0.5;
+            //border-radius:0;
+            background: none;
+        }
+        &::-webkit-media-controls-current-time-display {
+            font-family: @font-family;
+            font-size: @font-size;
+        }
+        &::-webkit-media-controls-play-button {
+            cursor: pointer;
+        }
     }
 
-    // SEE: https://gist.github.com/afabbro/3759334
-    audio::-webkit-media-controls-current-time-display {
-        font-family: @font-family;
-        font-size: @font-size;
-    }
 }
 
 .audioplayer-status {
