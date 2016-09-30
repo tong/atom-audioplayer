@@ -8,10 +8,147 @@ import js.Browser.document;
 import js.Browser.window;
 import Atom.config;
 
-using om.DOMTools;
-
 @:keep
+@:expose
 class AudioPlayerView {
+
+    public var element(default,null) : Element;
+
+    var player : AudioPlayer;
+    var waveform : Waveform;
+    var marker : DivElement;
+
+    var wheelSpeed : Float;
+    var animationFrameId : Int;
+
+    public function new( player : AudioPlayer ) {
+
+        this.player = player;
+
+        //seekSpeed = config.get( 'audioplayer.seek_speed' );
+        wheelSpeed = 1; //config.get( 'audioplayer.wheel_speed' );
+
+        var workspaceStyle = window.getComputedStyle( Atom.views.getView( Atom.workspace ) );
+
+        element = document.createDivElement();
+        element.classList.add( 'audioplayer' );
+        element.setAttribute( 'tabindex', '-1' );
+
+        waveform = new Waveform( workspaceStyle.color, workspaceStyle.backgroundColor );
+        element.appendChild( waveform.canvas );
+
+        marker = document.createDivElement();
+        marker.classList.add( 'marker' );
+        element.appendChild( marker );
+
+        element.appendChild( player.audio );
+
+        element.addEventListener( 'DOMNodeInserted', function(){
+
+            player.audio.addEventListener( 'playing', handleAudioPlaying, false );
+            player.audio.addEventListener( 'ended', handleAudioEnded, false );
+            player.audio.addEventListener( 'error', handleAudioError, false );
+            player.audio.addEventListener( 'canplaythrough', function(e) {
+
+                waveform.color = workspaceStyle.color;
+                waveform.backgroundColor = workspaceStyle.backgroundColor;
+                waveform.generate( player.getPath(), function(){
+                    updateMarker();
+                });
+
+                element.addEventListener( 'click', handleMouseDown, false );
+                element.addEventListener( 'mousewheel', handleMouseWheel, false );
+                //element.addEventListener( 'focus', function(e) trace(e) , false );
+                //element.addEventListener( 'blur', function(e) handleClickVideo(e) , false );
+
+            }, false );
+        }, false );
+
+        window.addEventListener( 'resize', handleResize, false );
+    }
+
+    /*
+    public function attach() {
+        trace("attach");
+    }
+
+    public function attached() {
+        trace("attached");
+    }
+
+    public function dispose() {
+    }
+    */
+
+    function update( time : Float ) {
+
+        animationFrameId = window.requestAnimationFrame( update );
+        updateMarker();
+
+        /*
+        ctx.fillStyle = '#fff';
+    	for( i in 0...frequencyData.length ) {
+			ctx.fillRect( i, 0, 1, frequencyData[i] / 256 * h );
+		}
+        */
+    }
+
+    function seek( time : Float ) : Float {
+        if( player.audio.currentTime != null ) player.audio.currentTime += time;
+        return player.audio.currentTime;
+    }
+
+    function setAudioPositionFromPanePosition( x : Int ) {
+        player.audio.currentTime = player.audio.duration * (x / element.offsetWidth);
+    }
+
+    function updateMarker() {
+        var percentPlayed = player.audio.currentTime / player.audio.duration;
+        marker.style.left = (percentPlayed * element.offsetWidth )+'px';
+    }
+
+    function handleAudioPlaying(e) {
+        //trace(e);
+        animationFrameId = window.requestAnimationFrame( update );
+    }
+
+    function handleAudioEnded(e) {
+    }
+
+    function handleAudioError(e) {
+    }
+
+    function handleMouseDown(e) {
+        setAudioPositionFromPanePosition( e.layerX  );
+        //element.addEventListener( 'mouseup', handleMouseUp, false );
+        //element.addEventListener( 'mousemove', handleMouseMove, false );
+        //element.addEventListener( 'mouseout', handleMouseOut, false );
+    }
+
+    function handleMouseUp(e) {
+        //stopMouseSeek();
+    }
+
+    function handleMouseOut(e) {
+        //stopMouseSeek();
+    }
+
+    function handleMouseWheel(e) {
+        var v = e.wheelDelta / 100 * wheelSpeed;
+        if( e.ctrlKey ) {
+            v *= 10;
+            if( e.shiftKey ) v *= 10;
+        }
+        seek( v );
+    }
+
+    function handleResize(e) {
+        waveform.resize();
+    }
+}
+
+/*
+@:keep
 
     public var element(default,null) : Element;
 
@@ -39,6 +176,8 @@ class AudioPlayerView {
         element = document.createDivElement();
         element.classList.add( 'audioplayer' );
         element.setAttribute( 'tabindex', '-1' );
+
+        //trace(workspaceStyle.color);
 
         waveform = new Waveform( workspaceStyle.color, workspaceStyle.backgroundColor );
         element.appendChild( waveform.canvas );
@@ -75,7 +214,7 @@ class AudioPlayerView {
             //if( isPlaying ) audio.play();
         });
         //observer.observe( element, { attributes: true } );
-        */
+        * /
 
         disposables = new atom.CompositeDisposable();
         disposables.add( Atom.commands.add( element, 'audioplayer:toggle-playback', function(e) togglePlayback() ) );
@@ -100,9 +239,11 @@ class AudioPlayerView {
     }
 
     function update( time : Float ) {
+
         animationFrameId = window.requestAnimationFrame( update );
+
         var percentPlayed = audio.currentTime / audio.duration;
-        marker.style.left = (percentPlayed * element.getOuterWidth() )+'px';
+        marker.style.left = (percentPlayed * element.offsetWidth )+'px';
     }
 
     public function destroy() {
@@ -112,6 +253,7 @@ class AudioPlayerView {
 
         audio.removeEventListener( 'playing', handleAudioPlaying );
         audio.removeEventListener( 'ended', handleAudioEnd );
+        audio.remove();
 
         disposables.dispose();
 
@@ -196,9 +338,8 @@ class AudioPlayerView {
     }
 
     function setAudioPositionFromPanePosition( x : Int ) {
-        audio.currentTime = audio.duration * (x / element.getOuterWidth());
+        audio.currentTime = audio.duration * (x / element.offsetWidth);
     }
-
 
     function handleMouseWheel(e) {
         var v = e.wheelDelta / 100 * wheelSpeed;
@@ -213,3 +354,4 @@ class AudioPlayerView {
         waveform.resize();
     }
 }
+*/

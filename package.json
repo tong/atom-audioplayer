@@ -1,16 +1,39 @@
 {
   "name": "audioplayer",
   "main": "./lib/audioplayer",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "Playback audio files",
   "consumedServices": {
       "status-bar": { "versions": { "^1.0.0": "consumeStatusBar" } }
   },
-  "keywords": ["audio","audioplayer"],
+  "keywords": ["audio","audioplayer","wav","ogg","mp3","sound"],
   "repository": "https://github.com/tong/atom-audioplayer",
   "license": "MIT",
   "engines": {
-    "atom": ">=1.5.0 <2.0.0"
+    "atom": ">=1.10.0 <2.0.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "configSchema": {
+      "autoplay": {
+          "title": "Autoplay",
+          "description": "Autoplay when opened",
+          "type": "boolean",
+          "default": true
+      },
+      "loop": {
+          "title": "Loop Audio",
+          "type": "boolean",
+          "default": false
+      },
+      "volume": {
+          "title": "Default Volume",
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0.0,
+          "maximum": 1.0
+      }
+  },
+  "deserializers": {
+      "AudioPlayer": "deserialize"
+  }
 }

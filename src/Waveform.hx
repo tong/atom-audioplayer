@@ -6,6 +6,7 @@ import js.html.audio.AudioContext;
 import js.Browser.document;
 import js.Browser.window;
 import om.audio.AudioBufferLoader;
+import om.audio.PeakMeter;
 
 class Waveform {
 
@@ -13,13 +14,14 @@ class Waveform {
     public var color : String;
     public var backgroundColor(get,set) : String;
 
-    var audio : AudioContext;
+    //var audio : AudioContext;
     var context : CanvasRenderingContext2D;
     var peaks : Array<Float>;
 
     public function new( color : String, backgroundColor : String ) {
 
         canvas = document.createCanvasElement();
+        canvas.classList.add( 'waveform' );
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
@@ -28,8 +30,6 @@ class Waveform {
 
         context = canvas.getContext2d();
         context.fillStyle = color;
-
-        audio = new AudioContext();
     }
 
     inline function get_backgroundColor() : String return canvas.style.backgroundColor;
@@ -39,14 +39,14 @@ class Waveform {
 
         if( subRanges == null ) subRanges = window.innerWidth;
 
-        AudioBufferLoader.load( audio, path, function(e,buf){
+        AudioBufferLoader.load( AudioPlayer.context, path, function(e,buf){
 
             if( e != null ) {
                 Atom.notifications.addError( 'Failed to analyze sound data' );
                 return;
             }
 
-            peaks = om.audio.Analyzer.getMergedPeaks( buf, subRanges );
+            peaks = PeakMeter.getMergedPeaks( buf, subRanges );
             //TODO determine max volume
 
             drawChannel( peaks );

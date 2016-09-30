@@ -1,8 +1,9 @@
--js lib/audioplayer.js
--lib hxatom
--dce full
 -cp src
--cp ../../lib/om.audio/src
--cp ../../lib/om.dom/src
--debug
-Main
+-lib hxatom
+-lib om.audio
+-D hxnodejs_no_version_warning
+--each
+
+--next
+-js lib/audioplayer.js
+AudioPlayer
