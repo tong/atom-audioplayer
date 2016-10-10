@@ -49,7 +49,7 @@ class Waveform {
             peaks = PeakMeter.getMergedPeaks( buf, subRanges );
             //TODO determine max volume
 
-            drawChannel( peaks );
+            draw( peaks );
 
             if( onComplete != null ) onComplete();
         });
@@ -58,10 +58,10 @@ class Waveform {
     public function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        drawChannel( peaks );
+        draw( peaks );
     }
 
-    function drawChannel( peaks : Array<Float> ) {
+    function draw( peaks : Array<Float> ) {
 
         context.clearRect( 0, 0, canvas.width, canvas.height );
         context.fillStyle = color;
