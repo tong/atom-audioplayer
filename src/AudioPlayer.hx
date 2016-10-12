@@ -20,17 +20,11 @@ class AudioPlayer {
 
     static inline function __init__() {
         untyped module.exports = AudioPlayer;
-		/*
-		disposables = new CompositeDisposable();
-        disposables.add( Atom.views.addViewProvider( AudioPlayer, function(player:AudioPlayer) {
-            return new AudioPlayerView( player ).element;
-        }));
-		*/
     }
 
     public static var context(default,null) : AudioContext;
 
-    static var allowedFileTypes = ['aiff','flac','mp3','ogg','wav'];
+    static var allowedFileTypes = ['flac','mp3','ogg','opus','wav','weba'];
     static var disposables : CompositeDisposable;
     //static var statusbar : Statusbar;
 
