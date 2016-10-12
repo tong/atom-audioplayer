@@ -24,9 +24,8 @@ class AudioPlayer {
 
     public static var context(default,null) : AudioContext;
 
-    static var allowedFileTypes = ['flac','mp3','ogg','opus','wav','weba'];
+    static var allowedFileTypes = ['flac','mp3','ogg','opus','weba','wav'];
     static var disposables : CompositeDisposable;
-    //static var statusbar : Statusbar;
 
     static function activate( state : Dynamic ) {
 
@@ -40,14 +39,17 @@ class AudioPlayer {
 
     static function deactivate() {
         disposables.dispose();
-        //statusbar.dispose();
+        context.close();
     }
 
     static function openURI( uri : String ) {
         var ext = uri.extension().toLowerCase();
         if( allowedFileTypes.has( ext ) ) {
-            //return new AudioPlayer( uri, Atom.config.get( 'audioplayer.autoplay' ) );
-            return new AudioPlayer( { path : uri, play: Atom.config.get( 'audioplayer.autoplay' ), time: null } );
+            return new AudioPlayer( {
+                path : uri,
+                play: Atom.config.get( 'audioplayer.autoplay' ),
+                time: null
+            } );
         }
         return null;
     }
@@ -56,14 +58,11 @@ class AudioPlayer {
         //pane.addRightTile( { item: new Statusbar().element, priority:0 } );
     }
 
-	public static function deserialize( state : Dynamic ) {
-		trace(state);
-		//return new AudioPlayer( state.path, state.play, state.time );
+	static function deserialize( state : Dynamic ) {
 		return new AudioPlayer( state );
 	}
 
 	////////////////////////////////////////////////////////////////////////////
-
 
 	var file : atom.File;
 	var element : Element;
@@ -98,7 +97,6 @@ class AudioPlayer {
         element.appendChild( marker );
 
 		audio = document.createAudioElement();
-        //audio.autoplay = state.play; //Atom.config.get( 'audioplayer.autoplay' );
         audio.controls = true;
         audio.src = file.getPath();
         audio.currentTime = state.time;
@@ -107,20 +105,7 @@ class AudioPlayer {
         audio.addEventListener( 'playing', handleAudioPlaying, false );
         audio.addEventListener( 'ended', handleAudioEnded, false );
         audio.addEventListener( 'error', handleAudioError, false );
-        audio.addEventListener( 'canplaythrough', function(e) {
-
-            waveform.color = workspaceStyle.color;
-            waveform.backgroundColor = workspaceStyle.backgroundColor;
-            waveform.generate( file.getPath(), function(){
-                updateMarker();
-            });
-
-            //element.addEventListener( 'click', handleMouseDown, false );
-            //element.addEventListener( 'mousewheel', handleMouseWheel, false );
-            //element.addEventListener( 'focus', function(e) trace(e) , false );
-            //element.addEventListener( 'blur', function(e) handleClickVideo(e) , false );
-
-        }, false );
+        audio.addEventListener( 'canplaythrough', handleCanPlayThrough, false );
 
         commands = new CompositeDisposable();
         commands.add( Atom.commands.add( element, 'audioplayer:toggle-playback', function(e) togglePlayback() ) );
@@ -146,7 +131,16 @@ class AudioPlayer {
     }
 
 	public function dispose() {
+
         commands.dispose();
+
+        element.removeEventListener( 'click', handleMouseDown );
+        element.removeEventListener( 'mousewheel', handleMouseWheel );
+
+        audio.removeEventListener( 'playing', handleAudioPlaying );
+        audio.removeEventListener( 'ended', handleAudioEnded );
+        audio.removeEventListener( 'error', handleAudioError );
+
 		audio.pause();
         audio.remove();
         audio = null;
@@ -167,23 +161,20 @@ class AudioPlayer {
     }
 
     public function getURI() {
-        //getURI: -> encodeURI(@getPath()).replace(/#/g, '%23').replace(/\?/g, '%3F')
-        //return "abc";// file.getPath().urlEncode();
-        //return "file://" + encodeURI(file.getPath().replace(/\\/g, '/')).replace(/#/g, '%23').replace(/\?/g, '%3F')
         return "file://" + file.getPath().urlEncode();
     }
 
+    /*
     public function isEqual( other ) {
         if( !Std.is( other, AudioPlayer ) )
             return false;
         return getURI() == cast( other, AudioPlayer ).getURI();
     }
+    */
 
 	function update( time : Float ) {
-
         animationFrameId = window.requestAnimationFrame( update );
         updateMarker();
-
         /*
         ctx.fillStyle = '#fff';
     	for( i in 0...frequencyData.length ) {
@@ -206,7 +197,6 @@ class AudioPlayer {
         }
     }
 
-
     function seek( time : Float ) : Float {
         if( audio.currentTime != null ) audio.currentTime += time;
         return audio.currentTime;
@@ -221,17 +211,24 @@ class AudioPlayer {
         marker.style.left = (percentPlayed * element.offsetWidth )+'px';
     }
 
-    /*
-	function handleCanPlayThrough(e) {
-    }
-    */
-
     inline function togglePlayback() {
         isPlaying ? pause() : play();
     }
 
     inline function toggleMute() {
         audio.muted = !audio.muted;
+    }
+
+    function handleCanPlayThrough(e) {
+
+        audio.removeEventListener( 'canplaythrough', handleCanPlayThrough );
+
+        var workspaceStyle = window.getComputedStyle( Atom.views.getView( Atom.workspace ) );
+        waveform.color = workspaceStyle.color;
+        waveform.backgroundColor = workspaceStyle.backgroundColor;
+        waveform.generate( file.getPath(), function(){
+            updateMarker();
+        });
     }
 
 	function handleAudioPlaying(e) {
