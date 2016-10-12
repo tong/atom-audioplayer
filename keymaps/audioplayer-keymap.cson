@@ -1,0 +1,8 @@
+'.audioplayer':
+    'space':        'audioplayer:toggle-playback'
+    'enter':        'audioplayer:toggle-playback'
+    'left':         'audioplayer:seek-backward'
+    'right':        'audioplayer:seek-forward'
+    'up':           'audioplayer:goto-start'
+    'down':         'audioplayer:goto-end'
+    'm':            'audioplayer:toggle-mute'

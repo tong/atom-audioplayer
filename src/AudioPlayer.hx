@@ -66,20 +66,22 @@ class AudioPlayer {
 
 
 	var file : atom.File;
-
 	var element : Element;
 	var audio : AudioElement;
 	var waveform : Waveform;
     var marker : DivElement;
-
+    var isPlaying : Bool;
+	var seekSpeed : Float;
 	var wheelSpeed : Float;
     var animationFrameId : Int;
+    var commands : CompositeDisposable;
 
-	//function new( path : String, play : Bool, time = 0.0 ) {
 	function new( state ) {
 
 		this.file = new File( state.path );
 
+        isPlaying = false;
+        seekSpeed = 1;
 		wheelSpeed = 1; //config.get( 'audioplayer.wheel_speed' );
 
 		var workspaceStyle = window.getComputedStyle( Atom.views.getView( Atom.workspace ) );
@@ -96,34 +98,42 @@ class AudioPlayer {
         element.appendChild( marker );
 
 		audio = document.createAudioElement();
-        audio.autoplay = state.play; //Atom.config.get( 'audioplayer.autoplay' );
+        //audio.autoplay = state.play; //Atom.config.get( 'audioplayer.autoplay' );
         audio.controls = true;
         audio.src = file.getPath();
         audio.currentTime = state.time;
 		element.appendChild( audio );
 
-		element.addEventListener( 'DOMNodeInserted', function(){
+        audio.addEventListener( 'playing', handleAudioPlaying, false );
+        audio.addEventListener( 'ended', handleAudioEnded, false );
+        audio.addEventListener( 'error', handleAudioError, false );
+        audio.addEventListener( 'canplaythrough', function(e) {
 
-            audio.addEventListener( 'playing', handleAudioPlaying, false );
-            audio.addEventListener( 'ended', handleAudioEnded, false );
-            audio.addEventListener( 'error', handleAudioError, false );
-            audio.addEventListener( 'canplaythrough', function(e) {
+            waveform.color = workspaceStyle.color;
+            waveform.backgroundColor = workspaceStyle.backgroundColor;
+            waveform.generate( file.getPath(), function(){
+                updateMarker();
+            });
 
-                waveform.color = workspaceStyle.color;
-                waveform.backgroundColor = workspaceStyle.backgroundColor;
-                waveform.generate( file.getPath(), function(){
-                    updateMarker();
-                });
+            //element.addEventListener( 'click', handleMouseDown, false );
+            //element.addEventListener( 'mousewheel', handleMouseWheel, false );
+            //element.addEventListener( 'focus', function(e) trace(e) , false );
+            //element.addEventListener( 'blur', function(e) handleClickVideo(e) , false );
 
-                element.addEventListener( 'click', handleMouseDown, false );
-                element.addEventListener( 'mousewheel', handleMouseWheel, false );
-                //element.addEventListener( 'focus', function(e) trace(e) , false );
-                //element.addEventListener( 'blur', function(e) handleClickVideo(e) , false );
-
-            }, false );
         }, false );
 
-        //if( play ) audio.play();
+        commands = new CompositeDisposable();
+        commands.add( Atom.commands.add( element, 'audioplayer:toggle-playback', function(e) togglePlayback() ) );
+        commands.add( Atom.commands.add( element, 'audioplayer:toggle-mute', function(e) toggleMute() ) );
+        commands.add( Atom.commands.add( element, 'audioplayer:seek-backward', function(e) seek( -(audio.duration / 10 * seekSpeed) ) ) );
+        commands.add( Atom.commands.add( element, 'audioplayer:seek-forward', function(e) seek( (audio.duration / 10 * seekSpeed) ) ) );
+        //commands.add( Atom.commands.add( element, 'audioplayer:goto-start', function(e) video.currentTime = 0 ) );
+        //commands.add( Atom.commands.add( element, 'audioplayer:goto-end', function(e) video.currentTime = video.duration ) );
+
+        element.addEventListener( 'click', handleMouseDown, false );
+        element.addEventListener( 'mousewheel', handleMouseWheel, false );
+
+        if( state.play != null ) play();
 	}
 
 	public function serialize() {
@@ -136,6 +146,7 @@ class AudioPlayer {
     }
 
 	public function dispose() {
+        commands.dispose();
 		audio.pause();
         audio.remove();
         audio = null;
@@ -181,6 +192,21 @@ class AudioPlayer {
         */
     }
 
+    function play() {
+        if( !isPlaying ) {
+            isPlaying = true;
+            audio.play();
+        }
+    }
+
+    function pause() {
+        if( isPlaying ) {
+            isPlaying = false;
+            audio.pause();
+        }
+    }
+
+
     function seek( time : Float ) : Float {
         if( audio.currentTime != null ) audio.currentTime += time;
         return audio.currentTime;
@@ -193,6 +219,19 @@ class AudioPlayer {
     function updateMarker() {
         var percentPlayed = audio.currentTime / audio.duration;
         marker.style.left = (percentPlayed * element.offsetWidth )+'px';
+    }
+
+    /*
+	function handleCanPlayThrough(e) {
+    }
+    */
+
+    inline function togglePlayback() {
+        isPlaying ? pause() : play();
+    }
+
+    inline function toggleMute() {
+        audio.muted = !audio.muted;
     }
 
 	function handleAudioPlaying(e) {
