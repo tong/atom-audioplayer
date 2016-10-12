@@ -1,28 +1,20 @@
 
 @import "ui-variables";
 
-[data-path$='.aiff']:before,
 [data-path$='.flac']:before,
 [data-path$='.mp3']:before,
 [data-path$='.ogg']:before,
-[data-path$='.wav']:before {
+[data-path$='.opus']:before,
+[data-path$='.wav']:before,
+[data-path$='.weba']:before {
     content: "\f0ba" !important;
 }
 
 .audioplayer {
 
-    width: 100%;
-    height: 100%;
     background: @pane-item-background-color;
 
     canvas.waveform {
-        /*
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        */
         width: 100%;
         height: 100%;
         //background: @base-background-color;
@@ -41,6 +33,7 @@
     // SEE: https://gist.github.com/afabbro/3759334
 
     audio {
+        
         position: absolute;
         top: @component-padding;
         right: @component-padding;
