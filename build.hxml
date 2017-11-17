@@ -1,6 +1,6 @@
 -js lib/audioplayer.js
+AudioPlayer
 -cp src
--lib hxatom
+-lib atom
 -lib om.audio
 -D hxnodejs_no_version_warning
-AudioPlayer

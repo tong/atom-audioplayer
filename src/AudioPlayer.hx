@@ -1,14 +1,17 @@
 
 import js.Browser.document;
 import js.Browser.window;
-import js.html.AudioElement;
-import js.html.Element;
-import js.html.DivElement;
-import js.html.audio.AudioContext;
-import js.node.Fs;
 import atom.CompositeDisposable;
 import atom.Disposable;
 import atom.File;
+import js.html.AudioElement;
+import js.html.DivElement;
+import js.html.Element;
+import js.html.Float32Array;
+import js.html.Uint8Array;
+import js.html.audio.AnalyserNode;
+import js.html.audio.AudioContext;
+import js.node.Fs;
 
 using Lambda;
 using StringTools;
@@ -22,16 +25,14 @@ class AudioPlayer {
         untyped module.exports = AudioPlayer;
     }
 
+    public static var allowedFileTypes(default,null) = ['flac','mp3','ogg','opus','weba','wav'];
     public static var context(default,null) : AudioContext;
 
-    static var allowedFileTypes = ['flac','mp3','ogg','opus','weba','wav'];
     static var disposables : CompositeDisposable;
 
     static function activate( state : Dynamic ) {
 
         trace( 'Atom-audioplayer ' );
-
-        context = new AudioContext();
 
 		disposables = new CompositeDisposable();
 		disposables.add( Atom.workspace.addOpener( openURI ) );
@@ -39,12 +40,13 @@ class AudioPlayer {
 
     static function deactivate() {
         disposables.dispose();
-        context.close();
+        if( context != null ) context.close();
     }
 
     static function openURI( uri : String ) {
         var ext = uri.extension().toLowerCase();
         if( allowedFileTypes.has( ext ) ) {
+            if( context == null ) context = new AudioContext();
             return new AudioPlayer( {
                 path : uri,
                 play: Atom.config.get( 'audioplayer.autoplay' ),
@@ -58,7 +60,8 @@ class AudioPlayer {
         //pane.addRightTile( { item: new Statusbar().element, priority:0 } );
     }
 
-	static function deserialize( state : Dynamic ) {
+	static function deserialize( state ) {
+        if( context == null ) context = new AudioContext();
 		return new AudioPlayer( state );
 	}
 
@@ -67,17 +70,21 @@ class AudioPlayer {
 	var file : atom.File;
 	var element : Element;
 	var audio : AudioElement;
-	var waveform : Waveform;
+	var spectrum : SoundSpectrum;
     var marker : DivElement;
     var isPlaying : Bool;
 	var seekSpeed : Float;
 	var wheelSpeed : Float;
-    var animationFrameId : Int;
     var commands : CompositeDisposable;
+    var animationFrameId : Int;
+    var frequencyAnalyser : AnalyserNode;
+    var frequencyData : Uint8Array;
+    var timedomainAnalyser : AnalyserNode;
+    var timedomainData : Float32Array;
 
 	function new( state ) {
 
-		this.file = new File( state.path );
+		this.file = new File( state.path, false );
 
         isPlaying = false;
         seekSpeed = 1;
@@ -89,8 +96,8 @@ class AudioPlayer {
         element.classList.add( 'audioplayer' );
         element.setAttribute( 'tabindex', '-1' );
 
-		waveform = new Waveform( workspaceStyle.color, workspaceStyle.backgroundColor );
-        element.appendChild( waveform.canvas );
+        spectrum = new SoundSpectrum( workspaceStyle.color, workspaceStyle.backgroundColor );
+        element.appendChild( spectrum.element );
 
 		marker = document.createDivElement();
         marker.classList.add( 'marker' );
@@ -106,6 +113,16 @@ class AudioPlayer {
         audio.addEventListener( 'ended', handleAudioEnded, false );
         audio.addEventListener( 'error', handleAudioError, false );
         audio.addEventListener( 'canplaythrough', handleCanPlayThrough, false );
+
+        frequencyAnalyser = AudioPlayer.context.createAnalyser();
+        frequencyAnalyser.fftSize = 128;
+
+        timedomainAnalyser = AudioPlayer.context.createAnalyser();
+        timedomainAnalyser.fftSize = 2048;
+        timedomainAnalyser.connect( frequencyAnalyser );
+
+        frequencyData = new Uint8Array( frequencyAnalyser.frequencyBinCount );
+        timedomainData = new Float32Array( timedomainAnalyser.frequencyBinCount );
 
         commands = new CompositeDisposable();
         commands.add( Atom.commands.add( element, 'audioplayer:toggle-playback', function(e) togglePlayback() ) );
@@ -172,17 +189,6 @@ class AudioPlayer {
     }
     */
 
-	function update( time : Float ) {
-        animationFrameId = window.requestAnimationFrame( update );
-        updateMarker();
-        /*
-        ctx.fillStyle = '#fff';
-    	for( i in 0...frequencyData.length ) {
-			ctx.fillRect( i, 0, 1, frequencyData[i] / 256 * h );
-		}
-        */
-    }
-
     function play() {
         if( !isPlaying ) {
             isPlaying = true;
@@ -208,8 +214,22 @@ class AudioPlayer {
 
     function updateMarker() {
         var percentPlayed = audio.currentTime / audio.duration;
-        marker.style.left = (percentPlayed * element.offsetWidth )+'px';
+        marker.style.left = Std.int(percentPlayed * element.offsetWidth )+'px';
     }
+
+    /*
+    function update( time : Float ) {
+
+        animationFrameId = window.requestAnimationFrame( update );
+
+        updateMarker();
+
+        frequencyAnalyser.getByteFrequencyData( frequencyData );
+        timedomainAnalyser.getFloatTimeDomainData( timedomainData );
+
+        //spectrum.draw( frequencyData, timedomainData );
+    }
+    */
 
     inline function togglePlayback() {
         isPlaying ? pause() : play();
@@ -223,17 +243,20 @@ class AudioPlayer {
 
         audio.removeEventListener( 'canplaythrough', handleCanPlayThrough );
 
+        spectrum.generateWaveForm( file.getPath() );
+
+        /*
         var workspaceStyle = window.getComputedStyle( Atom.views.getView( Atom.workspace ) );
         waveform.color = workspaceStyle.color;
         waveform.backgroundColor = workspaceStyle.backgroundColor;
         waveform.generate( file.getPath(), function(){
             updateMarker();
         });
+        */
     }
 
 	function handleAudioPlaying(e) {
-        //trace(e);
-        animationFrameId = window.requestAnimationFrame( update );
+        //animationFrameId = window.requestAnimationFrame( update );
     }
 
     function handleAudioEnded(e) {
@@ -267,6 +290,7 @@ class AudioPlayer {
     }
 
     function handleResize(e) {
-        waveform.resize();
+        //waveform.resize();
     }
+
 }

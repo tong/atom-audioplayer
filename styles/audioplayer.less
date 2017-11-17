@@ -14,10 +14,13 @@
 
     background: @pane-item-background-color;
 
-    canvas.waveform {
-        width: 100%;
-        height: 100%;
-        //background: @base-background-color;
+    .spectrum {
+        canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            //background: @base-background-color;
+        }
     }
 
     .marker {
@@ -30,9 +33,9 @@
         background: @text-color;
     }
 
-    // SEE: https://gist.github.com/afabbro/3759334
-
     audio {
+
+        // SEE: https://gist.github.com/afabbro/3759334
 
         position: absolute;
         width: 100%;
