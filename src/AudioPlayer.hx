@@ -217,19 +217,17 @@ class AudioPlayer {
         marker.style.left = Std.int(percentPlayed * element.offsetWidth )+'px';
     }
 
-    /*
     function update( time : Float ) {
 
         animationFrameId = window.requestAnimationFrame( update );
 
         updateMarker();
 
-        frequencyAnalyser.getByteFrequencyData( frequencyData );
-        timedomainAnalyser.getFloatTimeDomainData( timedomainData );
+        //frequencyAnalyser.getByteFrequencyData( frequencyData );
+        //timedomainAnalyser.getFloatTimeDomainData( timedomainData );
 
         //spectrum.draw( frequencyData, timedomainData );
     }
-    */
 
     inline function togglePlayback() {
         isPlaying ? pause() : play();
@@ -256,10 +254,12 @@ class AudioPlayer {
     }
 
 	function handleAudioPlaying(e) {
-        //animationFrameId = window.requestAnimationFrame( update );
+        animationFrameId = window.requestAnimationFrame( update );
     }
 
     function handleAudioEnded(e) {
+        window.cancelAnimationFrame( animationFrameId );
+        animationFrameId = null;
     }
 
     function handleAudioError(e) {
