@@ -1,9 +1,9 @@
 
-import js.Browser.document;
-import js.Browser.window;
 import atom.CompositeDisposable;
 import atom.Disposable;
 import atom.File;
+import js.Browser.document;
+import js.Browser.window;
 import js.html.AudioElement;
 import js.html.DivElement;
 import js.html.Element;
@@ -18,18 +18,14 @@ using StringTools;
 using haxe.io.Path;
 
 @:keep
-@:expose
 class AudioPlayer {
-
-    static inline function __init__() {
-        untyped module.exports = AudioPlayer;
-    }
 
     public static var allowedFileTypes(default,null) = ['flac','mp3','ogg','opus','weba','wav'];
     public static var context(default,null) : AudioContext;
 
     static var disposables : CompositeDisposable;
 
+	@:expose("activate")
     static function activate( state : Dynamic ) {
 
         trace( 'Atom-audioplayer ' );
@@ -38,10 +34,17 @@ class AudioPlayer {
 		disposables.add( Atom.workspace.addOpener( openURI ) );
     }
 
+	@:expose("deactivate")
     static function deactivate() {
         disposables.dispose();
         if( context != null ) context.close();
     }
+
+	@:expose("deserialize")
+	static function deserialize( state ) {
+		if( context == null ) context = new AudioContext();
+		return new AudioPlayer( state );
+	}
 
     static function openURI( uri : String ) {
         var ext = uri.extension().toLowerCase();
@@ -59,11 +62,6 @@ class AudioPlayer {
     static function consumeStatusBar( pane ) {
         //pane.addRightTile( { item: new Statusbar().element, priority:0 } );
     }
-
-	static function deserialize( state ) {
-        if( context == null ) context = new AudioContext();
-		return new AudioPlayer( state );
-	}
 
 	////////////////////////////////////////////////////////////////////////////
 
@@ -90,7 +88,7 @@ class AudioPlayer {
         seekSpeed = 1;
 		wheelSpeed = 1; //config.get( 'audioplayer.wheel_speed' );
 
-		var workspaceStyle = window.getComputedStyle( Atom.views.getView( Atom.workspace ) );
+		var workspaceStyle = window.getComputedStyle( document.body );
 
 		element = document.createDivElement();
         element.classList.add( 'audioplayer' );

@@ -1,6 +1,3 @@
 build.hxml
--lib om.closure
 -dce full
 --no-traces
--D closure_enabled
--D closure_overwrite
